@@ -1,3 +1,4 @@
+import "./i18n";
 import { Switch, Route } from "wouter";
 import { useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
@@ -36,7 +37,6 @@ export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
     console.error("useCart must be used within CartProvider - this might be a timing issue during development");
-    // Return default values to prevent crashes during development
     return {
       items: [],
       addToCart: async () => {},
@@ -73,7 +73,6 @@ function CartProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return [];
     const raw = window.localStorage.getItem(CART_CACHE_STORAGE_KEY);
     if (!raw) return [];
-
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
@@ -104,7 +103,6 @@ function CartProvider({ children }: { children: React.ReactNode }) {
       const cartItems = await api.getCartItems(sessionId);
       let itemsWithProducts = await hydrateWithProducts(cartItems);
 
-      // MemStorage resets whenever the server restarts. Restore from local cache.
       if (itemsWithProducts.length === 0) {
         const cachedItems = readCartCache();
         if (cachedItems.length > 0) {
@@ -115,7 +113,6 @@ function CartProvider({ children }: { children: React.ReactNode }) {
               quantity: Math.max(1, Number(cachedItem.quantity) || 1),
             });
           }
-
           const restoredItems = await api.getCartItems(sessionId);
           itemsWithProducts = await hydrateWithProducts(restoredItems);
         }
@@ -125,7 +122,6 @@ function CartProvider({ children }: { children: React.ReactNode }) {
       writeCartCache(itemsWithProducts);
     } catch (error) {
       console.error("Failed to load cart:", error);
-
       const cachedItems = readCartCache();
       if (cachedItems.length > 0) {
         setItems(cachedItems);
@@ -138,7 +134,6 @@ function CartProvider({ children }: { children: React.ReactNode }) {
     if (cachedItems.length > 0) {
       setItems(cachedItems);
     }
-
     loadCart();
   }, []);
 
@@ -207,7 +202,6 @@ function Router() {
 
   return (
     <Switch>
-      {/* Auth Routes - No Layout Wrapper */}
       <Route path="/welcome" component={Welcome} />
       <Route path="/auth" component={AuthLanding} />
       <Route path="/customer-signup" component={CustomerSignup} />
@@ -215,7 +209,6 @@ function Router() {
       <Route path="/artisan-signup" component={ArtisanSignup} />
       <Route path="/artisan-login" component={ArtisanLogin} />
 
-      {/* Main App Routes - With Layout */}
       <Route>
         {() => (
           <div className="min-h-screen bg-background">
