@@ -1,3 +1,4 @@
+import "./i18n";
 import { Switch, Route } from "wouter";
 import { useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
@@ -31,7 +32,6 @@ function Router() {
 
   return (
     <Switch>
-      {/* Auth Routes - No Layout Wrapper */}
       <Route path="/welcome" component={Welcome} />
       <Route path="/auth" component={AuthLanding} />
       <Route path="/customer-signup" component={CustomerSignup} />
@@ -39,7 +39,6 @@ function Router() {
       <Route path="/artisan-signup" component={ArtisanSignup} />
       <Route path="/artisan-login" component={ArtisanLogin} />
 
-      {/* Main App Routes - With Layout */}
       <Route>
         {() => (
           <div className="min-h-screen bg-background">

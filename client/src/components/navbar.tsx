@@ -1,22 +1,26 @@
 import { Link, useLocation } from "wouter";
-import { Search, ShoppingBag, Menu, X, Home, LogOut } from "lucide-react";
+import { Search, ShoppingBag, Menu, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/context/cart-context";
+import { useTranslation } from "react-i18next";
+import { useCart } from "@/App";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const [location] = useLocation();
   const { itemCount, setIsOpen } = useCart();
   const { isLoggedIn, userType, userName, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { href: "/marketplace", label: "Discover" },
-    { href: "/artisans", label: "Artisans" },
-    { href: "/community", label: "Stories" },
-    { href: "/ai-storytelling", label: "AI Tools" },
+    { href: "/marketplace", label: t("nav.marketplace") },
+    { href: "/artisans", label: t("nav.artisans") },
+    { href: "/community", label: t("nav.stories") },
+    { href: "/ai-storytelling", label: t("nav.aitools") },
   ];
 
   return (
@@ -30,10 +34,10 @@ export default function Navbar() {
               </h1>
             </Link>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href} data-testid={`link-${item.label.toLowerCase()}`}>
+              <Link key={item.href} href={item.href} data-testid={`link-${item.href}`}>
                 <span className={`px-3 py-2 rounded-lg text-foreground smooth-transition cursor-pointer relative group transition-all ${
                   location === item.href ? 'text-primary font-medium bg-primary/5' : 'hover:text-primary hover:bg-accent/10 active:scale-95'
                 }`}>
@@ -47,72 +51,72 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              data-testid="button-search" 
+
+            <LanguageSwitcher />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              data-testid="button-search"
               className="hidden sm:flex text-foreground hover:text-primary hover:bg-accent/20 smooth-transition group active:scale-95"
             >
               <Search className="h-5 w-5 group-hover:scale-125 smooth-transition" />
             </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="icon" 
+
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsOpen(true)}
               data-testid="button-cart"
               className="relative text-foreground hover:text-primary hover:bg-accent/20 smooth-transition group active:scale-95"
             >
               <ShoppingBag className="h-5 w-5 group-hover:scale-125 smooth-transition" />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse animate-glow-pulse" data-testid="text-cart-count">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse" data-testid="text-cart-count">
                   {itemCount}
                 </span>
               )}
             </Button>
 
-            {/* Desktop Auth Buttons */}
             <div className="hidden sm:flex items-center space-x-2">
               {isLoggedIn ? (
                 <>
                   <div className="text-sm animate-slide-in-right">
-                    <span className="text-muted-foreground">Welcome, </span>
+                    <span className="text-muted-foreground">{t("nav.welcome")}, </span>
                     <span className="font-semibold text-foreground">{userName}</span>
                     <span className="text-xs ml-2 px-2 py-1 bg-primary/20 text-primary rounded-full inline-block">
                       {userType === "artisan" ? "🛠️ Artisan" : "🛍️ Buyer"}
                     </span>
                   </div>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      logout();
-                    }}
-                    className="text-foreground hover:text-destructive ml-2 smooth-transition active:scale-95 group" 
+                    onClick={() => logout()}
+                    className="text-foreground hover:text-destructive ml-2 smooth-transition active:scale-95 group"
                     data-testid="button-logout"
                   >
                     <LogOut className="h-4 w-4 mr-1 group-hover:scale-125 smooth-transition" />
-                    Logout
+                    {t("nav.logout")}
                   </Button>
                 </>
               ) : (
                 <>
                   <Link href="/welcome">
-                    <Button variant="ghost" className="text-foreground hover:text-primary smooth-transition active:scale-95 group" data-testid="button-welcome">
-                      Welcome
+                    <Button variant="ghost" className="text-foreground hover:text-primary smooth-transition active:scale-95" data-testid="button-welcome">
+                      {t("nav.welcome")}
                     </Button>
                   </Link>
                   <Link href="/customer-login">
-                    <Button variant="ghost" className="text-foreground hover:text-secondary smooth-transition active:scale-95 group" data-testid="button-login">
-                      Login
+                    <Button variant="ghost" className="text-foreground hover:text-secondary smooth-transition active:scale-95" data-testid="button-login">
+                      {t("nav.login")}
                     </Button>
                   </Link>
                   <Link href="/auth">
-                    <Button 
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg hover:scale-110 smooth-transition button-hover active:scale-95" 
+                    <Button
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg hover:scale-110 smooth-transition active:scale-95"
                       data-testid="button-join"
                     >
-                      Join Now
+                      {t("nav.join")}
                     </Button>
                   </Link>
                 </>
@@ -121,10 +125,10 @@ export default function Navbar() {
 
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="md:hidden text-foreground hover:text-primary hover:bg-accent/20 smooth-transition active:scale-95" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden text-foreground hover:text-primary hover:bg-accent/20 smooth-transition active:scale-95"
                   data-testid="button-mobile-menu"
                 >
                   <Menu className="h-5 w-5" />
@@ -133,11 +137,11 @@ export default function Navbar() {
               <SheetContent side="right" className="w-[300px] animate-slide-in-right">
                 <div className="flex flex-col space-y-6 mt-6">
                   {navItems.map((item, index) => (
-                    <Link 
-                      key={item.href} 
+                    <Link
+                      key={item.href}
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      data-testid={`mobile-link-${item.label.toLowerCase()}`}
+                      data-testid={`mobile-link-${item.href}`}
                     >
                       <span className={`text-lg font-medium text-foreground smooth-transition cursor-pointer block py-2 px-3 rounded-lg animate-slide-in-left ${
                         location === item.href ? 'text-primary bg-primary/5 font-semibold' : 'hover:text-primary hover:bg-accent/10 active:scale-95'
@@ -146,48 +150,45 @@ export default function Navbar() {
                       </span>
                     </Link>
                   ))}
-                  
-                  {/* Mobile Auth Buttons */}
+
                   <div className="flex flex-col space-y-2 mt-6 pt-6 border-t border-border">
+                    <LanguageSwitcher />
                     {isLoggedIn ? (
                       <>
                         <div className="px-3 py-2 text-sm animate-slide-in-left">
-                          <span className="text-muted-foreground">Welcome, </span>
+                          <span className="text-muted-foreground">{t("nav.welcome")}, </span>
                           <span className="font-semibold">{userName}</span>
                           <div className="text-xs mt-1 px-2 py-1 bg-primary/20 text-primary rounded w-fit">
                             {userType === "artisan" ? "🛠️ Artisan" : "🛍️ Buyer"}
                           </div>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          className="w-full smooth-transition active:scale-95 animate-slide-in-left" 
-                          onClick={() => {
-                            logout();
-                            setIsMobileMenuOpen(false);
-                          }}
+                        <Button
+                          variant="outline"
+                          className="w-full smooth-transition active:scale-95"
+                          onClick={() => { logout(); setIsMobileMenuOpen(false); }}
                         >
                           <LogOut className="h-4 w-4 mr-1" />
-                          Logout
+                          {t("nav.logout")}
                         </Button>
                       </>
                     ) : (
                       <>
                         <Link href="/welcome">
-                          <Button variant="outline" className="w-full smooth-transition active:scale-95 animate-slide-in-left" onClick={() => setIsMobileMenuOpen(false)}>
-                            Welcome
+                          <Button variant="outline" className="w-full smooth-transition active:scale-95" onClick={() => setIsMobileMenuOpen(false)}>
+                            {t("nav.welcome")}
                           </Button>
                         </Link>
                         <Link href="/customer-login">
-                          <Button variant="outline" className="w-full smooth-transition active:scale-95 animate-slide-in-left" onClick={() => setIsMobileMenuOpen(false)}>
-                            Login
+                          <Button variant="outline" className="w-full smooth-transition active:scale-95" onClick={() => setIsMobileMenuOpen(false)}>
+                            {t("nav.login")}
                           </Button>
                         </Link>
                         <Link href="/auth">
-                          <Button 
-                            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 smooth-transition active:scale-95 animate-slide-in-left" 
+                          <Button
+                            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 smooth-transition active:scale-95"
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
-                            Join Now
+                            {t("nav.join")}
                           </Button>
                         </Link>
                       </>
