@@ -44,7 +44,14 @@ export function ProductCard({ product, index = 0, artisanName }: ProductCardProp
       queryClient.invalidateQueries({ queryKey: ["/api/products/featured"] });
       
       const saved = localStorage.getItem("likedProducts");
-      const likedSet = new Set(saved ? JSON.parse(saved) : []);
+      let likedSet = new Set<string>();
+      if (saved) {
+        try {
+          likedSet = new Set(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse likedProducts from localStorage", e);
+        }
+      }
       likedSet.add(product.id);
       localStorage.setItem("likedProducts", JSON.stringify(Array.from(likedSet)));
       
@@ -67,7 +74,14 @@ export function ProductCard({ product, index = 0, artisanName }: ProductCardProp
       queryClient.invalidateQueries({ queryKey: ["/api/products/featured"] });
       
       const saved = localStorage.getItem("likedProducts");
-      const likedSet = new Set(saved ? JSON.parse(saved) : []);
+      let likedSet = new Set<string>();
+      if (saved) {
+        try {
+          likedSet = new Set(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse likedProducts from localStorage", e);
+        }
+      }
       likedSet.delete(product.id);
       localStorage.setItem("likedProducts", JSON.stringify(Array.from(likedSet)));
       
