@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, ShoppingBag, Menu, LogOut } from "lucide-react";
+import { Search, ShoppingBag, Menu, LogOut, Heart } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/App";
@@ -61,6 +61,17 @@ export default function Navbar() {
             >
               <Search className="h-5 w-5 group-hover:scale-125 smooth-transition" />
             </Button>
+
+            <Link href="/wishlist">
+              <Button
+                variant="ghost"
+                size="icon"
+                data-testid="button-wishlist"
+                className="text-foreground hover:text-primary hover:bg-accent/20 smooth-transition group active:scale-95"
+              >
+                <Heart className="h-5 w-5 group-hover:scale-125 smooth-transition" />
+              </Button>
+            </Link>
 
             <Button
               variant="ghost"
@@ -149,6 +160,12 @@ export default function Navbar() {
                       </span>
                     </Link>
                   ))}
+                  
+                  <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)}>
+                    <span className="text-lg font-medium text-foreground smooth-transition cursor-pointer block py-2 px-3 rounded-lg hover:text-primary hover:bg-accent/10 active:scale-95">
+                      {t("nav.wishlist") || "Wishlist"}
+                    </span>
+                  </Link>
 
                   <div className="flex flex-col space-y-2 mt-6 pt-6 border-t border-border">
                     <LanguageSwitcher />

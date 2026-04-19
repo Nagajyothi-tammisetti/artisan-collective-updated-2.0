@@ -23,6 +23,7 @@ import CustomerSignup from "@/pages/customer-signup";
 import CustomerLogin from "@/pages/customer-login";
 import ArtisanSignup from "@/pages/artisan-signup";
 import ArtisanLogin from "@/pages/artisan-login";
+import Wishlist from "@/pages/wishlist";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ShoppingCart from "@/components/shopping-cart";
@@ -230,6 +231,7 @@ function Router() {
                   <Route path="/ai-storytelling" component={AiStorytelling} />
                   <Route path="/community/stories/:id" component={StoryDetail} />
                   <Route path="/community" component={Community} />
+                  <Route path="/wishlist" component={Wishlist} />
                   <Route component={NotFound} />
                 </Switch>
               </motion.main>
