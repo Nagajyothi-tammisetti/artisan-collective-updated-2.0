@@ -1,8 +1,8 @@
 # Artisan Collective ( NSoC'26 ) ( Project Kernels )
 
 ## hellp needed :)
-all rules are down there ( feel free to get to know ) 
-
+all rules are down there ( feel free to get to know ) ##
+------------------------------------------------------------------------------------
 
 Artisan Collective is a full-stack web platform designed to connect artisans, creators, and customers in one digital ecosystem. It combines marketplace capabilities, creator storytelling, and AI-assisted experiences to support local craftsmanship at scale.
 
