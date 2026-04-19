@@ -1,7 +1,6 @@
 import "./i18n";
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { queryClient } from "./lib/queryClient";
@@ -30,17 +29,20 @@ import CustomerSignup from "@/pages/customer-signup";
 import CustomerLogin  from "@/pages/customer-login";
 import ArtisanSignup  from "@/pages/artisan-signup";
 import ArtisanLogin   from "@/pages/artisan-login";
+
+// ✅ Keep BOTH features
 import Wishlist       from "@/pages/wishlist";
+import Checkout       from "@/pages/checkout";
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 const AUTH_ROUTES = [
-  { path: "/welcome",          component: Welcome        },
-  { path: "/auth",             component: AuthLanding    },
-  { path: "/customer-signup",  component: CustomerSignup },
-  { path: "/customer-login",   component: CustomerLogin  },
-  { path: "/artisan-signup",   component: ArtisanSignup  },
-  { path: "/artisan-login",    component: ArtisanLogin   },
+  { path: "/welcome",         component: Welcome        },
+  { path: "/auth",            component: AuthLanding    },
+  { path: "/customer-signup", component: CustomerSignup },
+  { path: "/customer-login",  component: CustomerLogin  },
+  { path: "/artisan-signup",  component: ArtisanSignup  },
+  { path: "/artisan-login",   component: ArtisanLogin   },
 ];
 
 const MAIN_ROUTES = [
@@ -52,7 +54,8 @@ const MAIN_ROUTES = [
   { path: "/ai-storytelling",       component: AiStorytelling },
   { path: "/community/stories/:id", component: StoryDetail    },
   { path: "/community",             component: Community      },
-  { path: "/wishlist",              component: Wishlist       },
+  { path: "/wishlist",              component: Wishlist       }, // ✅ from feature branch
+  { path: "/checkout",              component: Checkout       }, // ✅ from main
 ];
 
 // ─── Router ──────────────────────────────────────────────────────────────────
@@ -70,7 +73,6 @@ function Router() {
         {() => (
           <div className="min-h-screen bg-background">
             <Navbar />
-
             <AnimatePresence mode="wait">
               <motion.main
                 key={location}
@@ -87,7 +89,6 @@ function Router() {
                 </Switch>
               </motion.main>
             </AnimatePresence>
-
             <Footer />
             <ShoppingCart />
             <BackToTop />
@@ -98,7 +99,8 @@ function Router() {
   );
 }
 
-function App() {
+// ✅ Keep only ONE export style
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -112,5 +114,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;

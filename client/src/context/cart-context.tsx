@@ -1,52 +1,45 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { CartContextType, CartItemWithProduct } from "@/types";
 
 const CartContext = createContext<CartContextType | null>(null);
 
-const CART_SESSION_STORAGE_KEY = "artisan-collective-cart-session";
-const CART_CACHE_STORAGE_KEY = "artisan-collective-cart-cache";
+const CART_SESSION_KEY = "artisan-collective-cart-session";
+const CART_CACHE_KEY   = "artisan-collective-cart-cache";
 
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within CartProvider");
-  }
-  return context;
-};
+export function useCart(): CartContextType {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItemWithProduct[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
   const [sessionId] = useState(() => {
-    if (typeof window === "undefined") return "guest-session";
-    const existing = window.localStorage.getItem(CART_SESSION_STORAGE_KEY);
+    const existing = window.localStorage.getItem(CART_SESSION_KEY);
     if (existing) return existing;
     const generated = `guest-${crypto.randomUUID()}`;
-    window.localStorage.setItem(CART_SESSION_STORAGE_KEY, generated);
+    window.localStorage.setItem(CART_SESSION_KEY, generated);
     return generated;
   });
 
-  const writeCartCache = (nextItems: CartItemWithProduct[]) => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(CART_CACHE_STORAGE_KEY, JSON.stringify(nextItems));
-  };
+  const writeCache = (next: CartItemWithProduct[]) =>
+    window.localStorage.setItem(CART_CACHE_KEY, JSON.stringify(next));
 
-  const readCartCache = (): CartItemWithProduct[] => {
-    if (typeof window === "undefined") return [];
-    const raw = window.localStorage.getItem(CART_CACHE_STORAGE_KEY);
-    if (!raw) return [];
+  const readCache = (): CartItemWithProduct[] => {
     try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed as CartItemWithProduct[];
+      const raw = window.localStorage.getItem(CART_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
   };
 
-  const hydrateWithProducts = async (cartItems: Array<{ id: string; productId: string; quantity: number }>) => {
-    return Promise.all(
+  const hydrate = async (cartItems: Array<{ id: string; productId: string; quantity: number }>) =>
+    Promise.all(
       cartItems.map(async (item) => {
         const product = await api.getProduct(item.productId);
         const artisan = await api.getArtisan(product.artisanId);
@@ -59,48 +52,50 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         };
       })
     );
-  };
 
   const loadCart = async () => {
     try {
       const cartItems = await api.getCartItems(sessionId);
-      let itemsWithProducts = await hydrateWithProducts(cartItems);
+      let withProducts = await hydrate(cartItems);
 
-      if (itemsWithProducts.length === 0) {
-        const cachedItems = readCartCache();
-        if (cachedItems.length > 0) {
-          for (const cachedItem of cachedItems) {
+      // fallback to cache if empty
+      if (withProducts.length === 0) {
+        const cached = readCache();
+
+        if (cached.length > 0) {
+          for (const c of cached) {
             try {
               await api.addToCart({
                 sessionId,
-                productId: cachedItem.productId,
-                quantity: Math.max(1, Number(cachedItem.quantity) || 1),
+                productId: c.productId,
+                quantity: Math.max(1, Number(c.quantity) || 1),
               });
             } catch (e) {
-              console.warn("Failed to sync cached item to server", e);
+              console.warn("Failed to sync cached item", e);
             }
           }
-          const restoredItems = await api.getCartItems(sessionId);
-          itemsWithProducts = await hydrateWithProducts(restoredItems);
+
+          withProducts = await hydrate(await api.getCartItems(sessionId));
         }
       }
 
-      setItems(itemsWithProducts);
-      writeCartCache(itemsWithProducts);
+      setItems(withProducts);
+      writeCache(withProducts);
+
     } catch (error) {
       console.error("Failed to load cart:", error);
-      const cachedItems = readCartCache();
-      if (cachedItems.length > 0) {
-        setItems(cachedItems);
+
+      const cached = readCache();
+      if (cached.length > 0) {
+        setItems(cached);
       }
     }
   };
 
   useEffect(() => {
-    const cachedItems = readCartCache();
-    if (cachedItems.length > 0) {
-      setItems(cachedItems);
-    }
+    const cached = readCache();
+    if (cached.length > 0) setItems(cached);
+
     loadCart();
   }, []);
 
@@ -139,27 +134,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.clearCart(sessionId);
       setItems([]);
-      writeCartCache([]);
+      writeCache([]);
     } catch (error) {
       console.error("Failed to clear cart:", error);
       throw error;
     }
   };
 
-  const total = items.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const total = items.reduce(
+    (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
+    0
+  );
 
-  const value: CartContextType = {
-    items,
-    addToCart,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-    total,
-    itemCount,
-    isOpen,
-    setIsOpen,
-  };
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        updateQuantity,
+        removeFromCart,
+        clearCart,
+        total,
+        itemCount,
+        isOpen,
+        setIsOpen,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 }
