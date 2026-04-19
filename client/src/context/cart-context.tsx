@@ -14,7 +14,7 @@ export function useCart(): CartContextType {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items,  setItems]  = useState<CartItemWithProduct[]>([]);
+  const [items, setItems] = useState<CartItemWithProduct[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
   const [sessionId] = useState(() => {
@@ -33,7 +33,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const raw = window.localStorage.getItem(CART_CACHE_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
       return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   };
 
   const hydrate = async (cartItems: Array<{ id: string; productId: string; quantity: number }>) =>
@@ -41,7 +43,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       cartItems.map(async (item) => {
         const product = await api.getProduct(item.productId);
         const artisan = await api.getArtisan(product.artisanId);
-        return { ...item, product: { ...product, artisanName: artisan.name } };
+        return {
+          ...item,
+          product: {
+            ...product,
+            artisanName: artisan.name,
+          },
+        };
       })
     );
 
@@ -50,57 +58,110 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const cartItems = await api.getCartItems(sessionId);
       let withProducts = await hydrate(cartItems);
 
+      // fallback to cache if empty
       if (withProducts.length === 0) {
         const cached = readCache();
+
         if (cached.length > 0) {
           for (const c of cached) {
-            await api.addToCart({ sessionId, productId: c.productId, quantity: Math.max(1, Number(c.quantity) || 1) });
+            try {
+              await api.addToCart({
+                sessionId,
+                productId: c.productId,
+                quantity: Math.max(1, Number(c.quantity) || 1),
+              });
+            } catch (e) {
+              console.warn("Failed to sync cached item", e);
+            }
           }
+
           withProducts = await hydrate(await api.getCartItems(sessionId));
         }
       }
 
       setItems(withProducts);
       writeCache(withProducts);
-    } catch {
+
+    } catch (error) {
+      console.error("Failed to load cart:", error);
+
       const cached = readCache();
-      if (cached.length > 0) setItems(cached);
+      if (cached.length > 0) {
+        setItems(cached);
+      }
     }
   };
 
   useEffect(() => {
     const cached = readCache();
     if (cached.length > 0) setItems(cached);
+
     loadCart();
   }, []);
 
   const addToCart = async (productId: string) => {
-    await api.addToCart({ sessionId, productId, quantity: 1 });
-    await loadCart();
-    setIsOpen(true);
+    try {
+      await api.addToCart({ sessionId, productId, quantity: 1 });
+      await loadCart();
+      setIsOpen(true);
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
+      throw error;
+    }
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
-    await api.updateCartItem(itemId, quantity);
-    await loadCart();
+    try {
+      await api.updateCartItem(itemId, quantity);
+      await loadCart();
+    } catch (error) {
+      console.error("Failed to update cart:", error);
+      throw error;
+    }
   };
 
   const removeFromCart = async (itemId: string) => {
-    await api.removeFromCart(itemId);
-    await loadCart();
+    try {
+      await api.removeFromCart(itemId);
+      await loadCart();
+    } catch (error) {
+      console.error("Failed to remove from cart:", error);
+      throw error;
+    }
   };
 
   const clearCart = async () => {
-    await api.clearCart(sessionId);
-    setItems([]);
-    writeCache([]);
+    try {
+      await api.clearCart(sessionId);
+      setItems([]);
+      writeCache([]);
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+      throw error;
+    }
   };
 
-  const total     = items.reduce((sum, i) => sum + parseFloat(i.product.price) * i.quantity, 0);
+  const total = items.reduce(
+    (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
+    0
+  );
+
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, updateQuantity, removeFromCart, clearCart, total, itemCount, isOpen, setIsOpen }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        updateQuantity,
+        removeFromCart,
+        clearCart,
+        total,
+        itemCount,
+        isOpen,
+        setIsOpen,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

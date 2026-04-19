@@ -1,4 +1,4 @@
-import { type Artisan, type InsertArtisan, type Product, type InsertProduct, type Story, type InsertStory, type CartItem, type InsertCartItem, type AiGeneration, type InsertAiGeneration } from "@shared/schema";
+import { type Artisan, type InsertArtisan, type Product, type InsertProduct, type Story, type InsertStory, type CartItem, type InsertCartItem, type AiGeneration, type InsertAiGeneration, type Review, type InsertReview } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 function normalizeStringArray(value: unknown): string[] {
@@ -19,6 +19,7 @@ export interface IStorage {
   getProductsByCategory(category: string): Promise<Product[]>;
   getProductsByArtisan(artisanId: string): Promise<Product[]>;
   getFeaturedProducts(): Promise<Product[]>;
+  getPopularProducts(limit?: number): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined>;
   likeProduct(id: string): Promise<Product | undefined>;
@@ -40,6 +41,10 @@ export interface IStorage {
   // AI Generations
   createAiGeneration(generation: InsertAiGeneration): Promise<AiGeneration>;
   getArtisanGenerations(artisanId: string): Promise<AiGeneration[]>;
+
+  // Reviews
+  getReviewsForProduct(productId: string): Promise<Review[]>;
+  createReview(review: InsertReview): Promise<Review>;
 }
 
 export class MemStorage implements IStorage {
@@ -48,6 +53,7 @@ export class MemStorage implements IStorage {
   private stories: Map<string, Story> = new Map();
   private cartItems: Map<string, CartItem> = new Map();
   private aiGenerations: Map<string, AiGeneration> = new Map();
+  private reviews: Map<string, Review> = new Map();
 
   constructor() {
     this.seedData();
@@ -1013,6 +1019,12 @@ export class MemStorage implements IStorage {
     return updatedProduct;
   }
 
+  async getPopularProducts(limit: number = 4): Promise<Product[]> {
+    return Array.from(this.products.values())
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, limit);
+  }
+
   // Story methods
   async getStory(id: string): Promise<Story | undefined> {
     return this.stories.get(id);
@@ -1052,7 +1064,7 @@ export class MemStorage implements IStorage {
     );
 
     if (existing) {
-      const updated = { ...existing, quantity: existing.quantity + (insertItem.quantity || 1) };
+      const updated = { ...existing, quantity: (existing.quantity || 0) + (insertItem.quantity || 1) };
       this.cartItems.set(existing.id, updated);
       return updated;
     }
@@ -1110,7 +1122,43 @@ export class MemStorage implements IStorage {
   }
 
   async getArtisanGenerations(artisanId: string): Promise<AiGeneration[]> {
-    return Array.from(this.aiGenerations.values()).filter(g => g.artisanId === artisanId);
+    return Array.from(this.aiGenerations.values())
+      .filter(gen => gen.artisanId === artisanId);
+  }
+
+  // Review methods
+  async getReviewsForProduct(productId: string): Promise<Review[]> {
+    return Array.from(this.reviews.values())
+      .filter(review => review.productId === productId)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const id = randomUUID();
+    const review: Review = {
+      ...insertReview,
+      id,
+      createdAt: new Date(),
+    };
+    this.reviews.set(id, review);
+
+    // Update product rating and review count
+    const product = this.products.get(review.productId);
+    if (product) {
+      const productReviews = Array.from(this.reviews.values())
+        .filter(r => r.productId === review.productId);
+      
+      const totalRating = productReviews.reduce((sum, r) => sum + r.rating, 0);
+      const avgRating = (totalRating / productReviews.length).toFixed(1);
+      
+      this.products.set(review.productId, {
+        ...product,
+        rating: avgRating,
+        reviewCount: productReviews.length,
+      });
+    }
+
+    return review;
   }
 }
 

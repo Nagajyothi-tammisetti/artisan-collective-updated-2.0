@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateProductStory, generateArtisanStory } from "./services/gemini";
-import { insertArtisanSchema, insertProductSchema, insertStorySchema, insertCartItemSchema } from "@shared/schema";
+import { insertArtisanSchema, insertProductSchema, insertStorySchema, insertCartItemSchema, insertReviewSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/cart", (_req, res, next) => {
@@ -57,6 +57,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Review routes
+  app.get("/api/reviews/:productId", async (req, res) => {
+    try {
+      console.log(`[GET] Fetching reviews for product: ${req.params.productId}`);
+      const reviews = await storage.getReviewsForProduct(req.params.productId);
+      console.log(`[GET] Found ${reviews.length} reviews`);
+      res.json(reviews);
+    } catch (error) {
+      console.error(`[GET] Review fetch error:`, error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/reviews/:productId", async (req, res) => {
+    try {
+      console.log(`[POST] Incoming review for product ${req.params.productId}:`, req.body);
+      
+      const validation = insertReviewSchema.safeParse({
+        ...req.body,
+        productId: req.params.productId,
+      });
+
+      if (!validation.success) {
+        console.error(`[POST] Validation failed:`, validation.error.format());
+        return res.status(400).json({ error: validation.error });
+      }
+
+      console.log(`[POST] Validation success, saving to storage...`);
+      const review = await storage.createReview(validation.data);
+      console.log(`[POST] Saved successfully with id:`, review.id);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error(`[POST] Error creating review:`, error);
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
   // Product routes
   app.get("/api/products", async (req, res) => {
     try {
@@ -81,6 +118,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(products);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch featured products" });
+    }
+  });
+
+  app.get("/api/products/popular", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 4;
+      const products = await storage.getPopularProducts(limit);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch popular products" });
     }
   });
 

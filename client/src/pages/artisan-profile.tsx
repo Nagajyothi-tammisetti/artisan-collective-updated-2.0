@@ -1,7 +1,6 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Star, Heart, ShoppingCart as ShoppingCartIcon, Award, Calendar, Users } from "lucide-react";
-import { useState } from "react";
+import { MapPin, Award, Calendar, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { useCart } from "@/context/cart-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,16 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { getCategoryFallbackImage, getProductImage } from "@/lib/product-image-utils";
+import { ProductCard } from "@/components/product-card";
 
 const ARTISAN_FALLBACK_IMAGE = "https://picsum.photos/seed/artisan-profile-fallback/1200/900";
 
 export default function ArtisanProfile() {
   const { id } = useParams();
-  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
-  const { addToCart } = useCart();
-  const { toast } = useToast();
 
   const { data: artisan, isLoading: artisanLoading } = useQuery({
     queryKey: ["/api/artisans", id],
@@ -30,37 +25,13 @@ export default function ArtisanProfile() {
     queryKey: ["/api/artisans", id, "products"],
     queryFn: () => api.getArtisanProducts(id!),
     enabled: !!id,
+    refetchInterval: 5000, // Poll every 5s for real-time likes
   });
 
   const { data: stories } = useQuery({
     queryKey: ["/api/stories"],
     queryFn: api.getStories,
   });
-
-  const toggleWishlist = (productId: string) => {
-    const newWishlist = new Set(wishlist);
-    if (newWishlist.has(productId)) {
-      newWishlist.delete(productId);
-      toast({ title: "Removed from wishlist" });
-    } else {
-      newWishlist.add(productId);
-      toast({ title: "Added to wishlist" });
-    }
-    setWishlist(newWishlist);
-  };
-
-  const handleAddToCart = async (productId: string, productName: string) => {
-    try {
-      await addToCart(productId);
-      toast({ title: `${productName} added to cart` });
-    } catch {
-      toast({
-        title: "Could not add to cart",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Filter stories by this artisan
   const artisanStories = stories?.filter((story: any) => story.authorId === id) || [];
@@ -104,7 +75,6 @@ export default function ArtisanProfile() {
 
   return (
     <>
-      
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-br from-primary/10 to-accent/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,64 +178,13 @@ export default function ArtisanProfile() {
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products?.map((product: any) => (
-                  <Card key={product.id} className="overflow-hidden border border-border group hover:shadow-lg smooth-transition" data-testid={`card-product-${product.id}`}>
-                    <div className="relative">
-                      <img 
-                        src={getProductImage(product)} 
-                        alt={product.name} 
-                        className="w-full h-48 object-cover group-hover:scale-105 smooth-transition"
-                        onError={(e) => {
-                          const img = e.currentTarget;
-                          img.onerror = null;
-                          img.src = getCategoryFallbackImage(product.category, product.id || product.name, 2);
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleWishlist(product.id)}
-                        className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-                        data-testid={`button-wishlist-${product.id}`}
-                      >
-                        <Heart 
-                          className={`h-4 w-4 ${wishlist.has(product.id) ? 'fill-primary text-primary' : 'text-muted-foreground'}`} 
-                        />
-                      </Button>
-                    </div>
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold mb-2 line-clamp-1" data-testid={`text-product-name-${product.id}`}>
-                        {product.name}
-                      </h3>
-                      <p className="text-muted-foreground mb-4 text-sm line-clamp-2" data-testid={`text-product-description-${product.id}`}>
-                        {product.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xl font-bold text-primary" data-testid={`text-product-price-${product.id}`}>
-                            ${product.price}
-                          </span>
-                          {product.rating && (
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm text-muted-foreground" data-testid={`text-product-rating-${product.id}`}>
-                                {product.rating}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <Button 
-                          size="sm"
-                          onClick={() => handleAddToCart(product.id, product.name)}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90 smooth-transition"
-                          data-testid={`button-add-to-cart-${product.id}`}
-                        >
-                          <ShoppingCartIcon className="mr-2 h-4 w-4" />
-                          Add to Cart
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {products?.map((product: any, index: number) => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    index={index} 
+                    artisanName={artisan.name} 
+                  />
                 ))}
               </div>
             )}

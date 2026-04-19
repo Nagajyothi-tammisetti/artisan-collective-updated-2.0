@@ -19,12 +19,15 @@ export function useAuth(): AuthContextType {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem("auth_logged_in") === "true";
   });
+
   const [userType, setUserType] = useState<UserType | null>(() => {
     return (localStorage.getItem("auth_user_type") as UserType) || null;
   });
+
   const [userName, setUserName] = useState<string | null>(() => {
     return localStorage.getItem("auth_user_name") || null;
   });

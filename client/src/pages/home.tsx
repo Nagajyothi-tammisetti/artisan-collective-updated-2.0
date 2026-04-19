@@ -1,8 +1,12 @@
 import HeroSection from "@/components/hero-section";
 import { Link } from "wouter";
-import { Heart, Users, DollarSign, Award } from "lucide-react";
+import { Heart, Users, DollarSign, Award, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { ProductCard } from "@/components/product-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const stats = [
@@ -12,9 +16,80 @@ export default function Home() {
     { icon: Heart, value: "156", label: "Preserved Traditions" },
   ];
 
+  // Fetch popular products with real-time polling
+  const { data: popularProducts, isLoading: popularLoading } = useQuery({
+    queryKey: ["/api/products/popular"],
+    queryFn: () => api.getPopularProducts(4),
+    refetchInterval: 5000, // Poll every 5 seconds for "real-time" likes
+  });
+
+  const { data: artisans } = useQuery({
+    queryKey: ["/api/artisans"],
+    queryFn: api.getArtisans,
+  });
+
+  const getArtisanName = (artisanId: string) => {
+    return artisans?.find((a: any) => a.id === artisanId)?.name || "Artisan";
+  };
+
   return (
     <>
       <HeroSection />
+
+      {/* Community Favorites / Popularity Section */}
+      <section className="py-24 bg-background overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div className="animate-slide-in-left">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Top Artisan Crafts</span>
+              </div>
+              <h2 className="text-4xl font-serif font-bold text-foreground">Community Favorites</h2>
+              <p className="text-lg text-muted-foreground mt-2 max-w-xl">
+                The most loved handcrafted pieces, voted by our community of craft enthusiasts.
+              </p>
+            </div>
+            <Link href="/marketplace" className="animate-slide-in-right">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground smooth-transition shadow-sm hover:shadow-lg">
+                View All Popular Items
+              </Button>
+            </Link>
+          </div>
+
+          {popularLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-48 w-full rounded-2xl" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {popularProducts?.map((product: any, index: number) => (
+                <div key={product.id} className="relative group">
+                  <div className="absolute -top-3 -right-3 z-10 animate-bounce-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <div className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-1 rounded-full shadow-lg border-2 border-background flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      TRENDING
+                    </div>
+                  </div>
+                  <ProductCard 
+                    product={product} 
+                    index={index} 
+                    artisanName={getArtisanName(product.artisanId)} 
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="py-24 story-section relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -65,7 +140,7 @@ export default function Home() {
 
       <section className="py-24 bg-gradient-to-b from-background to-muted/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="bg-gradient-to-br from-primary/20 via-accent/15 to-secondary/20 p-16 text-center border border-primary/20 shadow-2xl hover:shadow-3xl smooth-transition card-hover group overflow-hidden relative">
+          <Card className="bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 p-16 text-center border border-primary/20 shadow-2xl hover:shadow-3xl smooth-transition card-hover group overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <CardContent className="space-y-8 animate-slide-in-up relative z-10">
               <div>

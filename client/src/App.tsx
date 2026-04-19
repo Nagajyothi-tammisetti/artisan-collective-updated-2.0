@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/auth-context";
 import { CartProvider } from "@/context/cart-context";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ShoppingCart from "@/components/shopping-cart";
@@ -28,7 +29,12 @@ import CustomerSignup from "@/pages/customer-signup";
 import CustomerLogin  from "@/pages/customer-login";
 import ArtisanSignup  from "@/pages/artisan-signup";
 import ArtisanLogin   from "@/pages/artisan-login";
+
+// ✅ Keep BOTH features
+import Wishlist       from "@/pages/wishlist";
 import Checkout       from "@/pages/checkout";
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
 
 const AUTH_ROUTES = [
   { path: "/welcome",         component: Welcome        },
@@ -48,8 +54,11 @@ const MAIN_ROUTES = [
   { path: "/ai-storytelling",       component: AiStorytelling },
   { path: "/community/stories/:id", component: StoryDetail    },
   { path: "/community",             component: Community      },
-  { path: "/checkout",              component: Checkout       },
+  { path: "/wishlist",              component: Wishlist       }, // ✅ from feature branch
+  { path: "/checkout",              component: Checkout       }, // ✅ from main
 ];
+
+// ─── Router ──────────────────────────────────────────────────────────────────
 
 function Router() {
   const [location] = useLocation();
@@ -90,6 +99,7 @@ function Router() {
   );
 }
 
+// ✅ Keep only ONE export style
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>

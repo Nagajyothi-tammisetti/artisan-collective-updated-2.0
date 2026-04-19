@@ -80,23 +80,22 @@ export default function ProductGrid() {
         <div className="text-center mb-20 animate-slide-in-down">
           <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-3 animate-fade-in">Explore Our Collection</span>
           <h2 className="text-4xl sm:text-5xl font-serif font-bold text-foreground mb-6 animate-slide-in-up">Handcrafted Treasures</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-12 animate-slide-in-up transition-slow" style={{ animationDelay: '0.1s' }}>
-            Each piece is unique, carrying the soul and skill of its creator. Browse our curated collection of authentic handmade crafts from artisans around the world.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in delay-100">
+            Discover a curated selection of unique artisan crafts, each with its own story of tradition and innovation.
           </p>
-          
-          <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((category, index) => (
+
+          <div className="flex flex-wrap justify-center gap-3 animate-fade-in delay-200">
+            {categories.map((category) => (
               <Button
                 key={category.id}
-                variant={selectedCategory === category.id ? "default" : "secondary"}
-                size="sm"
+                variant={selectedCategory === category.id ? "default" : "outline"}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`smooth-transition button-hover cursor-pointer ${selectedCategory === category.id 
-                  ? "bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-110" 
-                  : "bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary hover:scale-105"
-                } animate-fade-in-scale px-6 py-2 font-medium`}
-                style={{ animationDelay: `${index * 0.08}s` }}
-                data-testid={`button-filter-${category.id}`}
+                className={`rounded-full px-8 py-6 h-auto smooth-transition shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${
+                  selectedCategory === category.id 
+                    ? 'bg-primary text-primary-foreground shadow-primary/20' 
+                    : 'text-foreground hover:border-primary hover:text-primary bg-white/50 backdrop-blur-sm'
+                }`}
+                data-testid={`button-category-${category.id}`}
               >
                 {category.label}
               </Button>
@@ -105,22 +104,22 @@ export default function ProductGrid() {
         </div>
 
         <div className="product-grid">
-          {filteredProducts.map((product: any, index: number) => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
-              index={index} 
-              artisanName={getArtisanName(product.artisanId)} 
-            />
-          ))}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product: any, index: number) => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  index={index} 
+                  artisanName={getArtisanName(product.artisanId)} 
+                />
+              ))}
+            </div>
         </div>
 
         <div className="text-center mt-12 animate-slide-in-up">
-          <Button 
-            className="bg-accent text-accent-foreground hover:bg-accent/90 smooth-transition shadow-lg hover:shadow-xl hover:scale-105" 
-            data-testid="button-shop-all"
-          >
-            Shop All Products
+          <p className="text-muted-foreground mb-6">Want to see more unique handcrafted items?</p>
+          <Button variant="outline" className="rounded-full px-8 hover:bg-primary hover:text-primary-foreground smooth-transition shadow-sm hover:shadow-lg">
+            View Marketplace
           </Button>
         </div>
       </div>
