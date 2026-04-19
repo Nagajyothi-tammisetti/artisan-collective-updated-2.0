@@ -1,9 +1,9 @@
 <h1 align="center">✨ Contributors Guide ✨</h1>
 
-<h3 align="center">Welcome to the GearGuard: The Ultimate Maintenance Tracker! 😍<br>
+<h3 align="center">Welcome to the artisan-collective-updated-2.0 😍<br>
 We appreciate your interest in contributing.😊<br> </h3>
 
-First off, thank you for considering contributing to **🛠️ GearGuard: The Ultimate Maintenance Tracker! 🚀** This project is part of **Nexus Spring of Code (NSoC) 2026**, so please follow the rules carefully. We're excited to have you join our community. Every contribution, no matter how small, helps us build the best academic resource platform for students.
+First off, thank you for considering contributing to **artisan-collective-updated-2.0** This project is part of **Nexus Spring of Code (NSoC) 2026**, so please follow the rules carefully. We're excited to have you join our community. Every contribution, no matter how small, helps us build the best academic resource platform for students.
 
 ![Line](https://user-images.githubusercontent.com/85225156/171937799-8fc9e255-9889-4642-9c92-6df85fb86e82.gif)
 
