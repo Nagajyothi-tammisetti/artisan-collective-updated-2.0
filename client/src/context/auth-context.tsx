@@ -26,9 +26,6 @@ export function useAuth(): AuthContextType {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userType,   setUserType]   = useState<UserType | null>(null);
-  const [userName,   setUserName]   = useState<string | null>(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem("auth_logged_in") === "true";
