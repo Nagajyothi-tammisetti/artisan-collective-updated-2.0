@@ -19,6 +19,7 @@ export interface IStorage {
   getProductsByCategory(category: string): Promise<Product[]>;
   getProductsByArtisan(artisanId: string): Promise<Product[]>;
   getFeaturedProducts(): Promise<Product[]>;
+  getPopularProducts(limit?: number): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined>;
   likeProduct(id: string): Promise<Product | undefined>;
@@ -1011,6 +1012,12 @@ export class MemStorage implements IStorage {
     };
     this.products.set(id, updatedProduct);
     return updatedProduct;
+  }
+
+  async getPopularProducts(limit: number = 4): Promise<Product[]> {
+    return Array.from(this.products.values())
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, limit);
   }
 
   // Story methods

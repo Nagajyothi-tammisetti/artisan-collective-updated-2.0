@@ -45,6 +45,7 @@ export default function Marketplace() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["/api/products"],
     queryFn: () => api.getProducts(),
+    refetchInterval: 5000, // Poll every 5s for real-time likes
     retry: 3,
   });
 
@@ -71,6 +72,7 @@ export default function Marketplace() {
   }).sort((a: any, b: any) => {
     if (filters.sortBy === "price-low") return parseFloat(a.price) - parseFloat(b.price);
     if (filters.sortBy === "price-high") return parseFloat(b.price) - parseFloat(a.price);
+    if (filters.sortBy === "popularity") return (b.likes || 0) - (a.likes || 0);
     if (filters.sortBy === "rating") return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   }) || [];
@@ -192,6 +194,7 @@ export default function Marketplace() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="newest">Newly Listed</SelectItem>
+                          <SelectItem value="popularity">Most Popular</SelectItem>
                           <SelectItem value="price-low">Price: Low to High</SelectItem>
                           <SelectItem value="price-high">Price: High to Low</SelectItem>
                           <SelectItem value="rating">Top Rated</SelectItem>

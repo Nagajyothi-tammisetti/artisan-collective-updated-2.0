@@ -27,6 +27,7 @@ export default function Wishlist() {
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
     queryFn: () => api.getProducts(),
+    refetchInterval: 5000, // Poll every 5s for real-time likes
   });
 
   const { data: artisans } = useQuery({

@@ -84,6 +84,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/products/popular", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 4;
+      const products = await storage.getPopularProducts(limit);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch popular products" });
+    }
+  });
+
   app.get("/api/products/:id", async (req, res) => {
     try {
       const product = await storage.getProduct(req.params.id);

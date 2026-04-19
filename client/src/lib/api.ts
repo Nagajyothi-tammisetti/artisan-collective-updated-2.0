@@ -18,6 +18,10 @@ export const api = {
     return fetch(url).then(res => res.json());
   },
   getFeaturedProducts: () => fetch("/api/products/featured").then(res => res.json()),
+  getPopularProducts: (limit?: number) => {
+    const url = limit ? `/api/products/popular?limit=${limit}` : "/api/products/popular";
+    return fetch(url).then(res => res.json());
+  },
   getProduct: (id: string) => fetch(`/api/products/${id}`).then(res => res.json()),
   getArtisanProducts: (artisanId: string) => fetch(`/api/artisans/${artisanId}/products`).then(res => res.json()),
   createProduct: (data: any) => apiRequest("POST", "/api/products", data),
