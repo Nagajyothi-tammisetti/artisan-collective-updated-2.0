@@ -26,7 +26,7 @@ export default function Wishlist() {
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
-    queryFn: api.getProducts,
+    queryFn: () => api.getProducts(),
   });
 
   const { data: artisans } = useQuery({

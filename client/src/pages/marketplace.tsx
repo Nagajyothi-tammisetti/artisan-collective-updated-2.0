@@ -1,302 +1,261 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, Heart, Star, ShoppingCart as ShoppingCartIcon, SlidersHorizontal } from "lucide-react";
-import { Link } from "wouter";
+import { useState } from "react";
+import { Search, Filter, SlidersHorizontal, ShoppingCart } from "lucide-react";
 import { api } from "@/lib/api";
 import { useCart } from "@/App";
-import { FilterState } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useToast } from "@/hooks/use-toast";
-import { getCategoryFallbackImage, getProductImage } from "@/lib/product-image-utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ProductCard } from "@/components/product-card";
 
 const categories = [
-  { id: "all", label: "All Categories" },
-  { id: "ceramics", label: "Ceramics & Pottery" },
-  { id: "textiles", label: "Textiles & Weaving" },
-  { id: "jewelry", label: "Jewelry" },
-  { id: "woodwork", label: "Woodworking" },
-  { id: "glasswork", label: "Glasswork" },
-];
-
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-  { value: "rating", label: "Highest Rated" },
+  "Ceramics",
+  "Textiles",
+  "Jewelry",
+  "Woodwork",
+  "Paper Goods",
+  "Glass Art"
 ];
 
 export default function Marketplace() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState<FilterState>({
+  const [filters, setFilters] = useState({
+    search: "",
     category: "all",
-    priceRange: [0, 500],
+    priceRange: "all",
     artisan: "",
     sortBy: "newest",
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-
-  const { data: products, isLoading: productsLoading, error: productsError } = useQuery({
+  const { data: products, isLoading } = useQuery({
     queryKey: ["/api/products"],
     queryFn: () => api.getProducts(),
     retry: 3,
   });
 
-  const { data: artisans, isLoading: artisansLoading, error: artisansError } = useQuery({
+  const { data: artisans } = useQuery({
     queryKey: ["/api/artisans"],
-    queryFn: () => api.getArtisans(),
-    retry: 3,
+    queryFn: api.getArtisans,
   });
-
-
-  const handleAddToCart = async (productId: string, productName: string) => {
-    try {
-      await addToCart(productId);
-      toast({ title: `${productName} added to cart` });
-    } catch {
-      toast({
-        title: "Could not add to cart",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const getArtisanName = (artisanId: string) => {
     return artisans?.find((a: any) => a.id === artisanId)?.name || "Unknown Artisan";
   };
 
-  // Filter and sort products
   const filteredProducts = products?.filter((product: any) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = product.name.toLowerCase().includes(filters.search.toLowerCase()) || 
+                         product.description.toLowerCase().includes(filters.search.toLowerCase());
     const matchesCategory = filters.category === "all" || product.category === filters.category;
-    const matchesPrice = parseFloat(product.price) >= filters.priceRange[0] && 
-                        parseFloat(product.price) <= filters.priceRange[1];
-    const matchesArtisan = !filters.artisan || product.artisanId === filters.artisan;
     
-    return matchesSearch && matchesCategory && matchesPrice && matchesArtisan;
-  })?.sort((a: any, b: any) => {
-    switch (filters.sortBy) {
-      case "price-low":
-        return parseFloat(a.price) - parseFloat(b.price);
-      case "price-high":
-        return parseFloat(b.price) - parseFloat(a.price);
-      case "rating":
-        return parseFloat(b.rating || "0") - parseFloat(a.rating || "0");
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
+    let matchesPrice = true;
+    if (filters.priceRange === "under-50") matchesPrice = parseFloat(product.price) < 50;
+    else if (filters.priceRange === "50-100") matchesPrice = parseFloat(product.price) >= 50 && parseFloat(product.price) <= 100;
+    else if (filters.priceRange === "over-100") matchesPrice = parseFloat(product.price) > 100;
+
+    return matchesSearch && matchesCategory && matchesPrice;
+  }).sort((a: any, b: any) => {
+    if (filters.sortBy === "price-low") return parseFloat(a.price) - parseFloat(b.price);
+    if (filters.sortBy === "price-high") return parseFloat(b.price) - parseFloat(a.price);
+    if (filters.sortBy === "rating") return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   }) || [];
 
-  const FilterContent = () => (
-    <div className="space-y-6">
-      <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">Category</label>
-        <Select value={filters.category} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
-          <SelectTrigger data-testid="select-category-filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">Price Range</label>
-        <div className="px-2">
-          <Slider
-            value={filters.priceRange}
-            onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: value as [number, number] }))}
-            max={500}
-            min={0}
-            step={10}
-            className="mb-2"
-            data-testid="slider-price-range"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${filters.priceRange[0]}</span>
-            <span>${filters.priceRange[1]}</span>
-          </div>
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col md:flex-row gap-8 mb-8">
+          <Skeleton className="h-12 w-full md:w-96" />
+          <Skeleton className="h-12 w-full md:w-48" />
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="space-y-4">
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <div className="flex justify-between">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-
-      <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">Artisan</label>
-        <Select value={filters.artisan || "all-artisans"} onValueChange={(value) => setFilters(prev => ({ ...prev, artisan: value === "all-artisans" ? "" : value }))}>
-          <SelectTrigger data-testid="select-artisan-filter">
-            <SelectValue placeholder="All Artisans" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all-artisans">All Artisans</SelectItem>
-            {artisans?.map((artisan: any) => (
-              <SelectItem key={artisan.id} value={artisan.id}>
-                {artisan.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">Sort By</label>
-        <Select value={filters.sortBy} onValueChange={(value) => setFilters(prev => ({ ...prev, sortBy: value as any }))}>
-          <SelectTrigger data-testid="select-sort-filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <>
-      
-      {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-64 h-64 bg-primary rounded-full mix-blend-multiply filter blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-72 h-72 bg-accent rounded-full mix-blend-multiply filter blur-3xl"></div>
-        </div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-8 animate-slide-in-down">
-            <h1 className="text-4xl sm:text-5xl font-serif font-bold text-foreground mb-4">
-              Discover Authentic Crafts
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Browse our curated collection of handmade treasures from artisans around the world. Each piece tells a unique story.
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Search and Filters Header */}
+      <section className="bg-muted/30 border-b border-border py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center mb-10 animate-slide-in-down">
+            <h1 className="text-4xl sm:text-5xl font-serif font-bold text-foreground mb-4">Artisan Marketplace</h1>
+            <p className="text-lg text-muted-foreground">Discover unique handmade treasures from master craftspeople around the world.</p>
           </div>
-
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto animate-fade-in-scale" style={{ animationDelay: '0.1s' }}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-              <Input
-                placeholder="Search for products, artisans, or materials..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-3 text-lg border-border focus:border-primary focus:ring-primary smooth-transition"
+          
+          <div className="grid md:grid-cols-4 gap-4 max-w-5xl mx-auto animate-fade-in delay-100">
+            <div className="md:col-span-2 relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5 group-hover:text-primary smooth-transition" />
+              <Input 
+                placeholder="Search for products or master artisans..." 
+                className="pl-10 h-12 bg-white/80 backdrop-blur-sm border-border hover:border-primary smooth-transition shadow-sm"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                 data-testid="input-search"
               />
+            </div>
+            
+            <div className="hidden md:block">
+              <Select value={filters.category} onValueChange={(val) => setFilters({ ...filters, category: val })}>
+                <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-border hover:border-primary smooth-transition shadow-sm">
+                  <div className="flex items-center">
+                    <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Category" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="h-12 w-full bg-white/80 backdrop-blur-sm border-border hover:border-primary smooth-transition shadow-sm group">
+                    <SlidersHorizontal className="mr-2 h-4 w-4 group-hover:scale-110 smooth-transition" />
+                    Filters
+                    {Object.values(filters).filter(v => v !== "all" && v !== "" && v !== "newest").length > 0 && (
+                      <Badge className="ml-2 bg-primary text-primary-foreground">{Object.values(filters).filter(v => v !== "all" && v !== "" && v !== "newest").length}</Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="animate-slide-in-right">
+                  <SheetHeader>
+                    <SheetTitle>Marketplace Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="py-8 space-y-6">
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Category</label>
+                      <Select value={filters.category} onValueChange={(val) => setFilters({ ...filters, category: val })}>
+                        <SelectTrigger className="hover:border-primary">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Price Range</label>
+                      <Select value={filters.priceRange} onValueChange={(val) => setFilters({ ...filters, priceRange: val })}>
+                        <SelectTrigger className="hover:border-primary">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Price</SelectItem>
+                          <SelectItem value="under-50">Under $50</SelectItem>
+                          <SelectItem value="50-100">$50 - $100</SelectItem>
+                          <SelectItem value="over-100">Over $100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sort By</label>
+                      <Select value={filters.sortBy} onValueChange={(val) => setFilters({ ...filters, sortBy: val })}>
+                        <SelectTrigger className="hover:border-primary">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newly Listed</SelectItem>
+                          <SelectItem value="price-low">Price: Low to High</SelectItem>
+                          <SelectItem value="price-high">Price: High to Low</SelectItem>
+                          <SelectItem value="rating">Top Rated</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button 
+                      className="w-full bg-primary hover:bg-primary/90 mt-8 shadow-md"
+                      onClick={() => {
+                        setFilters({
+                          search: "",
+                          category: "all",
+                          priceRange: "all",
+                          artisan: "",
+                          sortBy: "newest",
+                        });
+                        setIsFilterOpen(false);
+                      }}
+                      data-testid="button-reset-filters"
+                    >
+                      Reset All Filters
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Desktop Filters */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <Card className="sticky top-24">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Filter className="mr-2 h-5 w-5" />
-                  Filters
-                </h3>
-                <FilterContent />
-              </CardContent>
-            </Card>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <h2 className="text-xl font-semibold" data-testid="text-results-count">
-                  {filteredProducts.length} Products Found
-                </h2>
-                
-                {/* Mobile Filter Button */}
-                <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="lg:hidden" data-testid="button-mobile-filters">
-                      <SlidersHorizontal className="mr-2 h-4 w-4" />
-                      Filters
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-80">
-                    <SheetHeader>
-                      <SheetTitle>Filters</SheetTitle>
-                    </SheetHeader>
-                    <div className="py-6">
-                      <FilterContent />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-
-            {/* Products Grid */}
-            {productsError ? (
-              <div className="text-center py-16">
-                <div className="text-5xl mb-4">⚠️</div>
-                <h3 className="text-xl font-semibold mb-2">Unable to load products</h3>
-                <p className="text-muted-foreground mb-4">There was an error loading the products. Please try refreshing the page.</p>
-                <Button onClick={() => window.location.reload()} className="bg-primary hover:bg-primary/90">
-                  Refresh Page
-                </Button>
-              </div>
-            ) : productsLoading ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
-                    <Skeleton className="w-full h-48" />
-                    <CardContent className="p-6">
-                      <Skeleton className="h-6 w-32 mb-2" />
-                      <Skeleton className="h-4 w-24 mb-3" />
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-4 w-3/4 mb-4" />
-                      <div className="flex justify-between items-center">
-                        <Skeleton className="h-6 w-16" />
-                        <Skeleton className="h-10 w-24" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold mb-2">No products found</h3>
-                <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product: any, index: number) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    index={index} 
-                    artisanName={getArtisanName(product.artisanId)} 
-                  />
-                ))}
-              </div>
-            )}
-          </main>
+      {/* Product List */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Featured Creations</h2>
+            <p className="text-muted-foreground">Showing {filteredProducts.length} unique treasures</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">View:</span>
+            <Button variant="ghost" size="sm" className="bg-accent/10 text-primary">Grid</Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">List</Button>
+          </div>
         </div>
-      </div>
 
-    </>
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-24 bg-muted/20 rounded-3xl border-2 border-dashed border-border animate-fade-in">
+            <div className="text-6xl mb-6">🔍</div>
+            <h3 className="text-2xl font-bold mb-3">No treasures found</h3>
+            <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product: any, index: number) => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                index={index} 
+                artisanName={getArtisanName(product.artisanId)} 
+              />
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
